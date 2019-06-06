@@ -10,4 +10,5 @@ proc-macro = true
 [dependencies]
 syn = "0.15.34"
 quote = "0.6.12"
+proc-macro2 = "0.4"
 Inflector = {version="*", default-features=false}

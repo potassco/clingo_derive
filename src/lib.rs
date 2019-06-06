@@ -25,7 +25,7 @@ fn impl_fact(ast: &syn::DeriveInput) -> TokenStream {
     let gen =
     match &ast.data {
         Struct(data) => {
-            match_fields_struct(&data.fields, name)
+            match_fields_struct(&data.fields, name, &ast.generics)
         },
         Enum(data) => {
             let mut variants = quote! {
@@ -33,142 +33,16 @@ fn impl_fact(ast: &syn::DeriveInput) -> TokenStream {
             };
             for variant in &data.variants {
                 let ident = &variant.ident;
-                let bla = match &variant.fields {
-                    Named(named_fields) => {
-                        println!("Named Fields");
-                        let mut tokens = quote! {
-                            let mut temp_vec =  vec![];
-                        };
-                        let mut field_idents =  quote! {};
-                        for field in &named_fields.named {
-                            let field_ident = field.ident.clone().expect("Expected Some(Ident). None found!");
-                            if field_idents.is_empty() {
-                                field_idents =  quote! {#field_ident};
-                            } else {
-                                field_idents =  quote! {#field_idents,#field_ident};
-                            }
-                            println!("IDENT:{:?}",field_ident);
-                            tokens = match &field.ty {
-                                BareFn(type_bare_fn) => {panic!("Found BareFn in enum 1.");},
-                                Tuple(type_tuple) => {panic!("Found Tuple in enum not yet implemented! 2");},
-                                Path(type_path) => {
-                                    let segments = &type_path.path.segments;
-                                    let typename = segments[0].ident.to_string();
-                                    match typename.as_ref() {
-                                        "String" => {
-                                            quote! {
-                                                #tokens
-                                                temp_vec.push(Symbol::create_string(&format!("{}", #field_ident))?);
-                                            }
-                                        },
-                                        "bool" | "u8" | "i8" | "u16" | "i16" |"u32" | "i32"  => {
-                                            quote! {
-                                                #tokens
-                                                temp_vec.push(Symbol::create_number(*#field_ident as i32));
-                                            }
-                                        },
-                                        "u64" | "i64" | "u128" | "i128" => panic!("Cannot derive_fact clingo library only support 32bit integers."),
-                                        _ => {
-                                            quote! {
-                                                #tokens
-                                                temp_vec.push(#field_ident.symbol()?);
-                                            }
-                                        },
-                                    }
-                                },
-
-                                Reference(type_reference) => {panic!("Found Reference in enum not yet implemented 1");},
-                                _ => {panic!("Unexpected type annotation");}
-                            };
-                        }
-
-                        let predicate_name = ident.to_string().to_snake_case();
-                        quote! {
-                            #ident{#field_idents} => {
-                                #tokens
-                                Symbol::create_function(#predicate_name,&temp_vec,true)
-                            },
-                        }
-                    },
-                    Unnamed(unnamed_fields) => {
-                        println!("Unnamed Fields");
-                        let mut tokens = quote! {
-                            let mut temp_vec =  vec![];
-                        };
-                        let mut field_idents =  quote! {};
-                        let predicate_name = ident.to_string().to_snake_case();
-                        let mut field_count =1;
-                        for field in &unnamed_fields.unnamed {
-                            println!("unanmed field: {:?}",field);
-                            let field_ident : syn::Ident  = syn::parse_str(&format!("x{}",field_count)).expect("Expected Ident");
-                            if field_idents.is_empty() {
-                                field_idents =  quote! {#field_ident};
-                            } else {
-                                field_idents =  quote! {#field_idents,#field_ident};
-                            }
-                            println!("IDENT NO");
-                            tokens = match &field.ty {
-                                BareFn(type_bare_fn) => {panic!("Found BareFn in enum.");},
-                                Tuple(type_tuple) => {panic!("Found Tuple in enum not yet implemented! 2");},
-                                Path(type_path) => {
-                                    let segments = &type_path.path.segments;
-                                    let typename = segments[0].ident.to_string();
-                                    match typename.as_ref() {
-                                        "String" => {
-                                            quote! {
-                                                #tokens
-                                                temp_vec.push(Symbol::create_string(&format!("{}", #field_ident))?);
-                                            }
-                                        },
-                                        "bool" | "u8" | "i8" | "u16" | "i16" |"u32" | "i32"  => {
-                                            quote! {
-                                                #tokens
-                                                temp_vec.push(Symbol::create_number(*#field_ident as i32));
-                                            }
-                                        },
-                                        "u64" | "i64" | "u128" | "i128" => panic!("Cannot derive_fact clingo library only support 32bit integers."),
-                                        _ => {
-                                            quote! {
-                                                #tokens
-                                                temp_vec.push(#field_ident.symbol()?);
-                                            }
-                                        },
-                                    }
-                                },
-
-                                Reference(type_reference) => {panic!("Found Reference in enum not yet implemented!");},
-                                _ => {panic!("Unexpected type annotation");}
-                            };
-                            field_count += 1;
-                        }
-                        quote! {
-                            #ident(#field_idents) => {
-                                #tokens
-                                Symbol::create_function(#predicate_name,&temp_vec,true)    
-                            },
-                        }
-                    },
-                    Unit => {
-                        println!("No Fields");
-                        let predicate_name = ident.to_string().to_snake_case();
-                        quote! {
-                            #ident => {
-                                Symbol::create_id(#predicate_name,true)
-                            },
-                        }
-                    },
-                };
-                println!("{:?}",ident);
-                println!("{:?}",bla.to_string());
-                let predicate_name = ident.to_string().to_snake_case();
+                let variant = match_fields_enum(&variant.fields, ident);
                 variants = quote!{
-                    #name::#bla
+                    #name::#variant
                     #variants
                 }
             }
+            let (impl_generics, ty_generics, where_clause) = &ast.generics.split_for_impl();
             let gen = quote! {
                 use failure::*;
-                impl Fact for #name {
+                impl #impl_generics Fact for #name #ty_generics #where_clause {
                     fn symbol(&self) -> Result<Symbol, Error> {
                         match self {
                             #variants
@@ -178,87 +52,209 @@ fn impl_fact(ast: &syn::DeriveInput) -> TokenStream {
             };
             gen.into()
         },
-        Union(data) => panic!("Cannot derive Fact for Unions!"),
+        Union(_) => panic!("Cannot derive Fact for Unions!"),
     };
     println!("EXPANDED: \n{}",gen);
     gen
 }
 
-fn match_fields_struct(fields: &syn::Fields, name: &syn::Ident) -> TokenStream {
-            match fields {
-                Named(named_fields) => {
-                    let mut tokens = quote! {
-                        let mut temp_vec =  vec![];
-                    };
-                    for field in &named_fields.named {
-                        let i = field.ident.clone().expect("Expected Some(Ident). None found!");
-                        tokens = match &field.ty {
-                            BareFn(type_bare_fn) => {panic!("Found BareFn in struct.");},
-                            Tuple(type_tuple) => {panic!("Found Tuple in struct not yet implemented!");},
-                            Path(type_path) => {
-                                let segments = &type_path.path.segments;
-                                let typename = segments[0].ident.to_string();
-                                match typename.as_ref() {
-                                    "String" => {
-                                        quote! {
-                                            #tokens
-                                            temp_vec.push(Symbol::create_string(&format!("{}", self.#i))?);
-                                        }
-                                    },
-                                    "bool" | "u8" | "i8" | "u16" | "i16" |"u32" | "i32"  => {
-                                        quote! {
-                                            #tokens
-                                            temp_vec.push(Symbol::create_number(self.#i as i32));
-                                        }
-                                    },
-                                    "u64" | "i64" | "u128" | "i128" => panic!("Cannot derive_fact clingo library only support 32bit integers."),
-                                    _ => {
-                                        quote! {
-                                            #tokens
-                                            temp_vec.push(self.#i.symbol()?);
-                                        }
-                                    },
-                                }
-                            },
-
-                            Reference(type_reference) => {panic!("Found Reference in struct not yet implemented");},
-                            _ => {panic!("Unexpected type annotation");}
-                        };
+fn match_fields_struct(fields: &syn::Fields, name: &syn::Ident, generics: &syn::Generics) -> TokenStream {
+    let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
+    match fields {
+        Named(named_fields) => {
+            let mut tokens = quote! {
+                let mut temp_vec =  vec![];
+            };
+            for field in &named_fields.named {
+                let i = field.ident.clone().expect("Expected Some(Ident). None found!");
+                tokens = match_type_struct(&field.ty, &tokens, i);
+            }
+            let predicate_name = name.to_string().to_snake_case();
+            quote! {
+                use failure::*;
+                impl #impl_generics Fact for #name #ty_generics #where_clause {
+                    fn symbol(&self) -> Result<Symbol, Error> {
+                        #tokens
+                        Symbol::create_function(#predicate_name,&temp_vec,true)
                     }
+                }
+            }
+        },
+        Unnamed(unnamed_fields) => {
+            let mut tokens = quote! {
+                let mut temp_vec =  vec![];
+            };
+            let mut field_count = 0;
+            for field in &unnamed_fields.unnamed {
+                tokens = match_unamed_type_struct(&field.ty, &tokens, field_count);
+                field_count += 1;
+            }
+            let predicate_name = name.to_string().to_snake_case();
+            quote! {
+                use failure::*;
+                impl #impl_generics Fact for #name #ty_generics #where_clause {
+                    fn symbol(&self) -> Result<Symbol, Error> {
+                        #tokens
+                        Symbol::create_function(#predicate_name,&temp_vec,true)
+                    }
+                }
+            }
+        },
+        Unit => {
+            let predicate_name = name.to_string().to_snake_case();
+            quote! {
+                use failure::*;
+                impl #impl_generics Fact for #name #ty_generics #where_clause {
+                    fn symbol(&self) -> Result<Symbol, Error> {
+                        Symbol::create_id(#predicate_name,true)
+                    }
+                }
+            }
+        },
+    }.into()
+}
 
-                    let predicate_name = name.to_string().to_snake_case();
+fn match_fields_enum(fields: &syn::Fields, ident: &syn::Ident) -> proc_macro2::TokenStream {
+    match &fields {
+        Named(named_fields) => {
+            let mut tokens = quote! {
+                let mut temp_vec =  vec![];
+            };
+            let mut field_idents =  quote! {};
+            for field in &named_fields.named {
+                let field_ident = field.ident.clone().expect("Expected Some(Ident). None found!");
+                if field_idents.is_empty() {
+                    field_idents =  quote! {#field_ident};
+                } else {
+                    field_idents =  quote! {#field_idents,#field_ident};
+                }
+                tokens = match_type_enum(&field.ty,&tokens,field_ident);
+            }
+            let predicate_name = ident.to_string().to_snake_case();
+            quote! {
+                #ident{#field_idents} => {
+                    #tokens
+                    Symbol::create_function(#predicate_name,&temp_vec,true)
+                },
+            }
+        },
+        Unnamed(unnamed_fields) => {
+            let mut tokens = quote! {
+                let mut temp_vec =  vec![];
+            };
+            let mut field_idents =  quote! {};
+            let predicate_name = ident.to_string().to_snake_case();
+            let mut field_count =1;
+            for field in &unnamed_fields.unnamed {
+                let field_ident : syn::Ident  = syn::parse_str(&format!("x{}",field_count)).expect("Expected Ident");
+                if field_idents.is_empty() {
+                    field_idents =  quote! {#field_ident};
+                } else {
+                    field_idents =  quote! {#field_idents,#field_ident};
+                }
+                tokens = match_type_enum(&field.ty,&tokens,field_ident);
+                field_count += 1;
+            }
+            quote! {
+                #ident(#field_idents) => {
+                    #tokens
+                    Symbol::create_function(#predicate_name,&temp_vec,true)    
+                },
+            }
+        },
+        Unit => {
+            let predicate_name = ident.to_string().to_snake_case();
+            quote! {
+                #ident => {
+                    Symbol::create_id(#predicate_name,true)
+                },
+            }
+        },
+    }
+}
+
+fn match_type_struct(ty: &syn::Type, tokens: &proc_macro2::TokenStream, i: syn::Ident) -> proc_macro2::TokenStream {
+    let gen = match &ty {
+        Tuple(_type_tuple) => {
+            quote!{
+                #tokens
+                temp_vec.push(self.#i.symbol()?);
+            }
+        },
+        Path(type_path) => {
+            let segments = &type_path.path.segments;
+            let typename = segments[0].ident.to_string();
+            match typename.as_ref() {
+                "u64" | "i64" | "u128" | "i128" => panic!("Cannot derive_fact clingo library only support 32bit integers."),
+                _ => {
                     quote! {
-                        use failure::*;
-                        impl Fact for #name {
-                            fn symbol(&self) -> Result<Symbol, Error> {
-                                #tokens
-                                Symbol::create_function(#predicate_name,&temp_vec,true)
-                            }
-                        }
+                        #tokens
+                        temp_vec.push(self.#i.symbol()?);
                     }
                 },
-                Unnamed(unnamed_fields) => {
-                    let predicate_name = name.to_string().to_snake_case();
+            }
+        },
+        Reference(type_reference) => {
+            match_type_struct(&type_reference.elem , tokens, i)
+        },
+        _ => {panic!("Unexpected type annotation");}
+    };
+    gen
+}
+fn match_unamed_type_struct(ty: &syn::Type, tokens: &proc_macro2::TokenStream, i: u32) -> proc_macro2::TokenStream {
+    let gen = match &ty {
+        Tuple(_type_tuple) => {
+            quote!{
+                #tokens
+                temp_vec.push(self.#i.symbol()?);
+            }
+        },
+        Path(type_path) => {
+            let segments = &type_path.path.segments;
+            let typename = segments[0].ident.to_string();
+            match typename.as_ref() {
+                "u64" | "i64" | "u128" | "i128" => panic!("Cannot derive_fact clingo library only support 32bit integers."),
+                _ => {
                     quote! {
-                        use failure::*;
-                        impl Fact for #name {
-                            fn symbol(&self) -> Result<Symbol, Error> {
-                                Symbol::create_function(#predicate_name,&[self.0.symbol().unwrap()],true)
-                            }
-                        }
+                        #tokens
+                        temp_vec.push(self.#i.symbol()?);
                     }
+                },
+            }
+        },
+        Reference(type_reference) => {
+            match_unamed_type_struct(&type_reference.elem , tokens, i)
+        },
+        _ => {panic!("Unexpected type annotation");}
+    };
+    gen
+}
 
-                },
-                Unit => {
-                    let predicate_name = name.to_string().to_snake_case();
+fn match_type_enum(ty: &syn::Type, tokens: &proc_macro2::TokenStream, i: syn::Ident) -> proc_macro2::TokenStream {
+    let gen = match &ty {
+        Tuple(_type_tuple) => {    
+            quote!{
+                #tokens
+                temp_vec.push(#i.symbol()?);
+            }
+        },
+        Path(type_path) => {
+            let segments = &type_path.path.segments;
+            let typename = segments[0].ident.to_string();
+            match typename.as_ref() {
+                "u64" | "i64" | "u128" | "i128" => panic!("Cannot derive_fact clingo library only support 32bit integers."),
+                _ => {
                     quote! {
-                        use failure::*;
-                        impl Fact for #name {
-                            fn symbol(&self) -> Result<Symbol, Error> {
-                                Symbol::create_id(#predicate_name,true)
-                            }
-                        }
+                        #tokens
+                        temp_vec.push(#i.symbol()?);
                     }
                 },
-            }.into()
+            }
+        },
+        Reference(type_reference) => {
+            match_type_enum(&type_reference.elem , tokens, i)
+        },
+        _ => {panic!("Unexpected type annotation");}
+    };
+    gen
 }
