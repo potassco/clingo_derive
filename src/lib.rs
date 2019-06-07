@@ -86,7 +86,7 @@ fn match_fields_struct(fields: &syn::Fields, name: &syn::Ident, generics: &syn::
             };
             let mut field_count = 0;
             for field in &unnamed_fields.unnamed {
-                tokens = match_unamed_type_struct(&field.ty, &tokens, field_count);
+                tokens = match_unamed_type_struct(&field.ty, &tokens, syn::Index::from(field_count));
                 field_count += 1;
             }
             let predicate_name = name.to_string().to_snake_case();
@@ -201,7 +201,7 @@ fn match_type_struct(ty: &syn::Type, tokens: &proc_macro2::TokenStream, i: syn::
     };
     gen
 }
-fn match_unamed_type_struct(ty: &syn::Type, tokens: &proc_macro2::TokenStream, i: u32) -> proc_macro2::TokenStream {
+fn match_unamed_type_struct(ty: &syn::Type, tokens: &proc_macro2::TokenStream, i: syn::Index) -> proc_macro2::TokenStream {
     let gen = match &ty {
         Tuple(_type_tuple) => {
             quote!{
