@@ -8,6 +8,8 @@ edition = "2018"
 proc-macro = true
 
 [dependencies]
+clingo = {path = "../clingo-rs"} 
+failure = "0.1"
 syn = "0.15.34"
 quote = "0.6.12"
 proc-macro2 = "0.4"
