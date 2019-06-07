@@ -10,7 +10,7 @@ use syn::Data::Union;
 use syn::Fields::*;
 use syn::Type::*;
 
-#[proc_macro_derive(Fact)]
+#[proc_macro_derive(ToSymbol)]
 pub fn derive_fact(input: TokenStream) -> TokenStream {
     // Construct a representation of Rust code as a syntax tree
     // that we can manipulate
@@ -42,7 +42,7 @@ fn impl_fact(ast: &syn::DeriveInput) -> TokenStream {
             let (impl_generics, ty_generics, where_clause) = &ast.generics.split_for_impl();
             let gen = quote! {
                 use failure::*;
-                impl #impl_generics Fact for #name #ty_generics #where_clause {
+                impl #impl_generics ToSymbol for #name #ty_generics #where_clause {
                     fn symbol(&self) -> Result<Symbol, Error> {
                         match self {
                             #variants
@@ -52,7 +52,7 @@ fn impl_fact(ast: &syn::DeriveInput) -> TokenStream {
             };
             gen.into()
         },
-        Union(_) => panic!("Cannot derive Fact for Unions!"),
+        Union(_) => panic!("Cannot derive ToSymbol for Unions!"),
     };
     println!("EXPANDED: \n{}",gen);
     gen
@@ -72,7 +72,7 @@ fn match_fields_struct(fields: &syn::Fields, name: &syn::Ident, generics: &syn::
             let predicate_name = name.to_string().to_snake_case();
             quote! {
                 use failure::*;
-                impl #impl_generics Fact for #name #ty_generics #where_clause {
+                impl #impl_generics ToSymbol for #name #ty_generics #where_clause {
                     fn symbol(&self) -> Result<Symbol, Error> {
                         #tokens
                         Symbol::create_function(#predicate_name,&temp_vec,true)
@@ -92,7 +92,7 @@ fn match_fields_struct(fields: &syn::Fields, name: &syn::Ident, generics: &syn::
             let predicate_name = name.to_string().to_snake_case();
             quote! {
                 use failure::*;
-                impl #impl_generics Fact for #name #ty_generics #where_clause {
+                impl #impl_generics ToSymbol for #name #ty_generics #where_clause {
                     fn symbol(&self) -> Result<Symbol, Error> {
                         #tokens
                         Symbol::create_function(#predicate_name,&temp_vec,true)
@@ -104,7 +104,7 @@ fn match_fields_struct(fields: &syn::Fields, name: &syn::Ident, generics: &syn::
             let predicate_name = name.to_string().to_snake_case();
             quote! {
                 use failure::*;
-                impl #impl_generics Fact for #name #ty_generics #where_clause {
+                impl #impl_generics ToSymbol for #name #ty_generics #where_clause {
                     fn symbol(&self) -> Result<Symbol, Error> {
                         Symbol::create_id(#predicate_name,true)
                     }
