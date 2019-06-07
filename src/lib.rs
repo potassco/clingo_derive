@@ -54,7 +54,7 @@ fn impl_fact(ast: &syn::DeriveInput) -> TokenStream {
         },
         Union(_) => panic!("Cannot derive ToSymbol for Unions!"),
     };
-    println!("EXPANDED: \n{}",gen);
+    // println!("EXPANDED: \n{}",gen);
     gen
 }
 
