@@ -8,7 +8,7 @@ Datatypes that implement this trait can be added to a [`clingo::FactBase`](https
 In your `Cargo.toml` add:
 
     [dependencies]
-    clingo-rs = "1.4.2"
+    clingo-rs = "0.4.2"
     clingo-derive = "*"
 
 In your source write:
