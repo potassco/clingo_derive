@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/potassco/clingo_derive.svg?branch=master)](https://travis-ci.org/potassco/clingo_derive)
+
 # clingo_derive
 
 This crate provides the derive macro for the [`clingo::ToSymbol`](https://docs.rs/clingo/0.4.2/clingo/trait.ToSymbol.html) trait.
