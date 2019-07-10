@@ -1,6 +1,6 @@
 [package]
 name = "clingo-derive"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Sven Thiele <sthiele78@gmail.com>"]
 edition = "2018"
 description = "Derive macros for the clingo-rs crate"
@@ -17,7 +17,7 @@ travis-ci = { repository = "potassco/clingo_derive" }
 proc-macro = true
 
 [dependencies]
-clingo = "0.4.2"
+clingo = "0.4.3"
 failure = "0.1"
 syn = "0.15.34"
 quote = "0.6.12"
