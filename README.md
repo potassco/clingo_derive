@@ -2,13 +2,13 @@
 
 # clingo_derive
 
-This crate provides the derive macro for the [`clingo::ToSymbol`](https://docs.rs/clingo/0.4.3/clingo/trait.ToSymbol.html) trait.
-Datatypes that implement this trait can be added to a [`clingo::FactBase`](https://docs.rs/clingo/0.4.3/clingo/struct.FactBase.html)
+This crate provides the derive macro for the [`clingo::ToSymbol`](https://docs.rs/clingo/0.5.0/clingo/trait.ToSymbol.html) trait.
+Datatypes that implement this trait can be added to a [`clingo::FactBase`](https://docs.rs/clingo/0.5.0/clingo/struct.FactBase.html)
 
 In your `Cargo.toml` add:
 
     [dependencies]
-    clingo-rs = "0.4.3"
+    clingo-rs = "0.5.0"
     clingo-derive = "*"
 
 In your source write:
