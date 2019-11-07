@@ -38,9 +38,8 @@ fn impl_fact(ast: &syn::DeriveInput) -> TokenStream {
             }
             let (impl_generics, ty_generics, where_clause) = &ast.generics.split_for_impl();
             let gen = quote! {
-                use failure::*;
                 impl #impl_generics ToSymbol for #name #ty_generics #where_clause {
-                    fn symbol(&self) -> Result<Symbol, Error> {
+                    fn symbol(&self) -> Result<Symbol, ClingoError> {
                         match self {
                             #variants
                         }
@@ -75,9 +74,8 @@ fn match_fields_struct(
             }
             let predicate_name = name.to_string().to_snake_case();
             quote! {
-                use failure::*;
                 impl #impl_generics ToSymbol for #name #ty_generics #where_clause {
-                    fn symbol(&self) -> Result<Symbol, Error> {
+                    fn symbol(&self) -> Result<Symbol, ClingoError> {
                         #tokens
                         Symbol::create_function(#predicate_name,&temp_vec,true)
                     }
@@ -96,9 +94,8 @@ fn match_fields_struct(
             }
             let predicate_name = name.to_string().to_snake_case();
             quote! {
-                use failure::*;
                 impl #impl_generics ToSymbol for #name #ty_generics #where_clause {
-                    fn symbol(&self) -> Result<Symbol, Error> {
+                    fn symbol(&self) -> Result<Symbol, ClingoError> {
                         #tokens
                         Symbol::create_function(#predicate_name,&temp_vec,true)
                     }
@@ -108,9 +105,8 @@ fn match_fields_struct(
         Unit => {
             let predicate_name = name.to_string().to_snake_case();
             quote! {
-                use failure::*;
                 impl #impl_generics ToSymbol for #name #ty_generics #where_clause {
-                    fn symbol(&self) -> Result<Symbol, Error> {
+                    fn symbol(&self) -> Result<Symbol, ClingoError> {
                         Symbol::create_id(#predicate_name,true)
                     }
                 }
